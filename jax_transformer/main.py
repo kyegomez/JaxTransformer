@@ -28,6 +28,20 @@ def layer_norm(x: jnp.ndarray, epsilon: float = 1e-6) -> jnp.ndarray:
     return normalized
 
 
+def silu(x: jnp.ndarray) -> jnp.ndarray:
+    return x * jax.nn.sigmoid(x)
+
+
+def dropout(
+    x: jnp.ndarray,
+    rate: float = 0.1,
+    rng: jax.random.PRNGKey = None,
+) -> jnp.ndarray:
+    keep_prob = 1 - rate
+    mask = jax.random.bernoulli(rng, keep_prob, x.shape)
+    return jnp.where(mask, x / keep_prob, 0)
+
+
 def mqa_attn(
     query: jnp.ndarray,
     key: jnp.ndarray,
@@ -69,36 +83,70 @@ def mqa_attn(
     return attn_output
 
 
+# def ffn(
+#     x: jnp.ndarray,
+#     d_ff: int,
+# ) -> jnp.ndarray:
+#     """
+#     Feed-forward network for the Transformer decoder block.
+
+#     Args:
+#         x (jnp.ndarray): Input tensor of shape (batch_size, seq_len, dim).
+#         d_ff (int): Dimension of the feed-forward layer.
+
+#     Returns:
+#         jnp.ndarray: Output tensor of shape (batch_size, seq_len, dim).
+
+#     Note:
+#         This function applies two linear transformations with a ReLU activation
+#         in between, which is a standard component in Transformer architectures.
+#     """
+#     w1 = jax.random.normal(
+#         jax.random.PRNGKey(0),
+#         (x.shape[-1], d_ff),
+#     )
+#     w2 = jax.random.normal(
+#         jax.random.PRNGKey(1),
+#         (d_ff, x.shape[-1]),
+#     )
+
+#     hidden = jax.nn.relu(x @ w1)
+#     output = hidden @ w2
+
+#     return output
+
+
 def ffn(
     x: jnp.ndarray,
     d_ff: int,
+    dim: int,
+    dropout_rate: float = 0.1,
+    rng: jax.random.PRNGKey = None,
 ) -> jnp.ndarray:
-    """
-    Feed-forward network for the Transformer decoder block.
-
-    Args:
-        x (jnp.ndarray): Input tensor of shape (batch_size, seq_len, dim).
-        d_ff (int): Dimension of the feed-forward layer.
-
-    Returns:
-        jnp.ndarray: Output tensor of shape (batch_size, seq_len, dim).
-
-    Note:
-        This function applies two linear transformations with a ReLU activation
-        in between, which is a standard component in Transformer architectures.
-    """
     w1 = jax.random.normal(
-        jax.random.PRNGKey(0),
-        (x.shape[-1], d_ff),
+        rng,
+        (dim, d_ff),
     )
+    b1 = jnp.zeros(d_ff)
     w2 = jax.random.normal(
-        jax.random.PRNGKey(1),
-        (d_ff, x.shape[-1]),
+        rng,
+        (d_ff, dim),
     )
+    b2 = jnp.zeros(dim)
 
-    hidden = jax.nn.relu(x @ w1)
-    output = hidden @ w2
+    # Apply first layer transformation
+    hidden = jnp.dot(x, w1) + b1
+    hidden = silu(hidden)
 
+    # Apply dropout
+    dropout_rng = jax.random.split(rng)[1]
+    hidden = dropout(hidden, dropout_rate, dropout_rng)
+
+    # Second linear
+    output = jnp.dot(hidden, w2) + b2
+
+    # Layer Normalization
+    output = layer_norm(output)
     return output
 
 
@@ -110,6 +158,8 @@ def decoder_block(
     heads: int = 8,
     dim: int = None,
     d_ff: int = None,
+    dropout_rate: float = 0.1,
+    ffn_rng: jax.random.PRNGKey = None,
 ) -> jnp.ndarray:
     """
     Implements a single decoder block of the Transformer architecture with multi-query attention.
@@ -156,7 +206,7 @@ def decoder_block(
     x = layer_norm(x + attn_output)
 
     # Feed-forward network and another residual connection
-    ff_output = ffn(x, d_ff)
+    ff_output = ffn(x, d_ff, dim, dropout_rate, ffn_rng)
     output = layer_norm(x + ff_output)
 
     return output
@@ -169,6 +219,8 @@ def transformer_decoder(
     heads: int = 8,
     dim: int = None,
     d_ff: int = None,
+    dropout_rate: float = 0.1,
+    rng: jax.random.PRNGKey = None,
 ) -> jnp.ndarray:
     """
     Applies a stack of Transformer decoder blocks to the input.
@@ -189,7 +241,11 @@ def transformer_decoder(
         consists of multi-query attention followed by a feed-forward network.
     """
     for _ in range(depth):
-        x = decoder_block(x, x, x, mask, heads, dim, d_ff)
+        x = decoder_block(
+            x, x, x, mask, heads, dim, d_ff, dropout_rate, rng
+        )
+
+        x = jax.nn.softmax(x, axis=-1)
     return x
 
 

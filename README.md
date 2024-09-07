@@ -47,26 +47,39 @@ After installing the dependencies, you can run the model on random input data to
 
 ```python
 import jax
-from jax_transformer import transformer_decoder, causal_mask
+from jax_transformer.main import transformer_decoder, causal_mask
 
-# Define model dimensions
+# Example usage
 batch_size = 2
 seq_len = 10
-d_model = 64
-num_heads = 8
+dim = 64
+heads = 8
 d_ff = 256
-num_layers = 6
+depth = 6
 
-# Random input tensor (representing tokens in the sequence)
-x = jax.random.normal(jax.random.PRNGKey(0), (batch_size, seq_len, d_model))
-
-# Generate causal mask for auto-regressive behavior
+# Random input tokens
+x = jax.random.normal(
+    jax.random.PRNGKey(0), (batch_size, seq_len, dim)
+)
+rng = jax.random.PRNGKey(42)
+# Generate causal mask
 mask = causal_mask(seq_len)
 
-# Run the input through the decoder
-output = transformer_decoder(x, mask, num_layers=num_layers, num_heads=num_heads, d_model=d_model, d_ff=d_ff)
+# Run through transformer decoder
+out = transformer_decoder(
+    x=x,
+    mask=mask,
+    depth=depth,
+    heads=heads,
+    dim=dim,
+    d_ff=d_ff,
+    dropout_rate=0.1,
+    rng=rng,
+)
 
-print(output.shape)  # Output: (batch_size, seq_len, d_model)
+
+print(out.shape)  # Should be (batch_size, seq_len, dim)
+
 ```
 
 ## Code Walkthrough

@@ -1,19 +1,20 @@
-from jax_transformer.mqa_attn import transformer_decoder, causal_mask
 import jax
+
+from jax_transformer.main import causal_mask, transformer_decoder
 
 # Example usage
 batch_size = 2
 seq_len = 10
-d_model = 64
-num_heads = 8
+dim = 64
+heads = 8
 d_ff = 256
-num_layers = 6
+depth = 6
 
 # Random input tokens
 x = jax.random.normal(
-    jax.random.PRNGKey(0), (batch_size, seq_len, d_model)
+    jax.random.PRNGKey(0), (batch_size, seq_len, dim)
 )
-
+rng = jax.random.PRNGKey(42)
 # Generate causal mask
 mask = causal_mask(seq_len)
 
@@ -21,11 +22,13 @@ mask = causal_mask(seq_len)
 out = transformer_decoder(
     x=x,
     mask=mask,
-    depth=num_layers,
-    heads=num_heads,
-    dim=d_model,
+    depth=depth,
+    heads=heads,
+    dim=dim,
     d_ff=d_ff,
+    dropout_rate=0.1,
+    rng=rng,
 )
 
 
-print(out)  # Should be (batch_size, seq_len, d_model)
+print(out.shape)  # Should be (batch_size, seq_len, dim)
