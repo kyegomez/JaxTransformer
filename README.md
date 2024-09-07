@@ -33,21 +33,13 @@ This project is a tutorial for building Transformer models from scratch in **JAX
 
 ## Installation
 
-To get started with this project, clone the repository and install the dependencies:
-
 ```bash
-git clone https://github.com/your-username/jax-transformer-multi-query-attention.git
-cd jax-transformer-multi-query-attention
-
-# Install required libraries
-pip install -r requirements.txt
+pip3 install -U jax-transformer
 ```
 
 ### Requirements
 
 - **JAX**: A library for high-performance machine learning research. Install JAX with GPU support (optional) by following the instructions on the [JAX GitHub page](https://github.com/google/jax).
-- **Numpy**: For efficient numerical operations.
-- **Matplotlib** (optional): If you wish to visualize attention weights or other model outputs.
 
 ## Usage
 
@@ -55,7 +47,7 @@ After installing the dependencies, you can run the model on random input data to
 
 ```python
 import jax
-from transformer_decoder import transformer_decoder, causal_mask
+from jax_transformer import transformer_decoder, causal_mask
 
 # Define model dimensions
 batch_size = 2
@@ -134,4 +126,3 @@ Contributions are welcome! If you'd like to contribute, please fork the reposito
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
