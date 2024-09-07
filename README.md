@@ -126,3 +126,14 @@ Contributions are welcome! If you'd like to contribute, please fork the reposito
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+# Citation
+
+
+```bibtex
+@article{JaxTransformer,
+    author={Kye Gomez},
+    title={Jax Transformer},
+    year={2024},
+}
+```
