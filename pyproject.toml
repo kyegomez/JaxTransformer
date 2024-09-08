@@ -24,7 +24,7 @@ classifiers = [
 [tool.poetry.dependencies]
 python = "^3.10"
 jax = "*"
-
+flax = "*"
 
 [tool.poetry.group.lint.dependencies]
 ruff = "^0.1.6"
